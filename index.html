@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>SPOTIFY STYLE PLAYER FINAL</title>
+<title>SPOTIFY STYLE PLAYER</title>
 
 <style>
 body{
@@ -84,9 +84,8 @@ img{
 </div>
 
 <div>
-    <button onclick="shuffle()">🔀</button>
-    <button onclick="repeat()">🔁</button>
-    <button onclick="openYT()">▶ YouTube</button>
+    <button onclick="shuffle()">🔀 셔플</button>
+    <button onclick="repeat()">🔁 반복</button>
 </div>
 
 </div>
@@ -94,8 +93,8 @@ img{
 <h2>📀 플레이리스트</h2>
 
 <input id="t" placeholder="제목">
-<input id="mp3" placeholder="MP3 URL (없어도 됨)">
-<input id="yt" placeholder="YouTube ID">
+<input id="mp3" placeholder="MP3 URL">
+<input id="img" placeholder="이미지 URL">
 <button onclick="add()">추가</button>
 
 <div class="list" id="list"></div>
@@ -108,91 +107,36 @@ let isRepeat=false;
 
 const audio=document.getElementById("audio");
 
-// ===== 로드 =====
-window.onload=()=>{
-    const data=localStorage.getItem("musicList");
-    const idx=localStorage.getItem("musicIndex");
-
-    if(data) list=JSON.parse(data);
-    if(idx) index=parseInt(idx);
-
-    render();
-
-    if(list[index]){
-        loadTrack(index);
-    }
-};
-
-// ===== 저장 =====
-function save(){
-    localStorage.setItem("musicList",JSON.stringify(list));
-    localStorage.setItem("musicIndex",index);
-}
-
-// ===== 썸네일 =====
-function thumb(id){
-    return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
-}
-
-// ===== 추가 =====
+// 추가
 function add(){
     const t=document.getElementById("t").value;
     const mp3=document.getElementById("mp3").value;
-    const yt=document.getElementById("yt").value;
+    const img=document.getElementById("img").value;
 
-    if(!t) return alert("제목 입력!");
-
-    list.push({
-        t,
-        mp3,
-        yt
-    });
-
-    save();
+    list.push({t,mp3,img});
     render();
 }
 
-// ===== 트랙 로드 =====
-function loadTrack(i){
+// 재생
+function play(i){
     index=i;
 
-    const v=list[i];
+    audio.src=list[i].mp3;
+    audio.play();
 
-    // mp3 있으면 audio 재생
-    if(v.mp3){
-        audio.src=v.mp3;
-    }
-
-    document.getElementById("title").innerText=v.t;
-
-    // 썸네일 자동
-    if(v.yt){
-        document.getElementById("cover").src=thumb(v.yt);
-    }
-
-    save();
-}
-
-// ===== 재생 =====
-function play(i){
-    loadTrack(i);
-
-    if(list[i].mp3){
-        audio.play();
-    }
+    document.getElementById("title").innerText=list[i].t;
+    document.getElementById("cover").src=list[i].img;
 
     render();
 }
 
-// ===== 토글 =====
+// 토글
 function toggle(){
-    if(audio.src){
-        if(audio.paused) audio.play();
-        else audio.pause();
-    }
+    if(audio.paused) audio.play();
+    else audio.pause();
 }
 
-// ===== 다음곡 =====
+// 다음곡
 function next(){
     if(isShuffle){
         index=Math.floor(Math.random()*list.length);
@@ -208,19 +152,19 @@ function next(){
     play(index);
 }
 
-// ===== 이전곡 =====
+// 이전곡
 function prev(){
     index--;
     if(index<0) index=0;
     play(index);
 }
 
-// ===== 자동재생 =====
+// 자동재생
 audio.onended=()=>{
     next();
 };
 
-// ===== 진행바 =====
+// 진행바
 audio.ontimeupdate=()=>{
     const progress=document.getElementById("progress");
     progress.value=(audio.currentTime/audio.duration)*100;
@@ -229,12 +173,12 @@ audio.ontimeupdate=()=>{
     document.getElementById("duration").innerText=format(audio.duration);
 };
 
-// ===== 드래그 =====
+// 드래그 이동
 document.getElementById("progress").oninput=(e)=>{
     audio.currentTime=(e.target.value/100)*audio.duration;
 };
 
-// ===== 시간 =====
+// 시간 포맷
 function format(s){
     if(!s) return "0:00";
     const m=Math.floor(s/60);
@@ -242,25 +186,19 @@ function format(s){
     return m+":"+(sec<10?"0":"")+sec;
 }
 
-// ===== 셔플 =====
+// 셔플
 function shuffle(){
     isShuffle=!isShuffle;
+    alert("셔플: "+isShuffle);
 }
 
-// ===== 반복 =====
+// 반복
 function repeat(){
     isRepeat=!isRepeat;
+    alert("반복: "+isRepeat);
 }
 
-// ===== 유튜브 열기 =====
-function openYT(){
-    const v=list[index];
-    if(!v?.yt) return alert("유튜브 ID 없음");
-
-    window.open(`https://yewtu.be/watch?v=${v.yt}`);
-}
-
-// ===== 리스트 =====
+// 리스트
 function render(){
     const box=document.getElementById("list");
     box.innerHTML="";
