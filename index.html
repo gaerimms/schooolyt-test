@@ -2,213 +2,216 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>YOUTUBE PLAYER PRO</title>
+<title>SPOTIFY STYLE PLAYER</title>
 
 <style>
-body {
-    background:#000;
+body{
+    background:#121212;
     color:white;
     font-family:Arial;
     text-align:center;
-    transition:0.3s;
 }
 
-.light {
-    background:#ffffff;
-    color:#000;
+/* 플레이어 */
+.player{
+    max-width:400px;
+    margin:40px auto;
+    background:#181818;
+    padding:20px;
+    border-radius:20px;
 }
 
-input {
-    padding:10px;
-    border-radius:8px;
-    background:#161b22;
-    color:white;
-    border:none;
-    margin:5px;
-}
-
-button {
-    padding:10px;
-    border-radius:8px;
-    background:#238636;
-    color:white;
-    border:none;
-    cursor:pointer;
-}
-
-.player {
-    position:relative;
-    width:90%;
-    max-width:800px;
-    padding-top:56.25%;
-    margin:30px auto;
-}
-
-iframe {
-    position:absolute;
+img{
     width:100%;
-    height:100%;
+    border-radius:12px;
 }
 
-#listBox {
-    max-width:700px;
-    margin:auto;
-    background:#161b22;
-    padding:15px;
-    border-radius:10px;
-}
-
-.item {
-    background:#21262d;
+.controls button{
+    margin:5px;
     padding:10px;
-    margin-bottom:10px;
-    display:flex;
-    align-items:center;
+    border-radius:50%;
+    border:none;
+    background:#1db954;
+    color:white;
+    font-size:16px;
     cursor:pointer;
 }
 
-.item img {
-    width:120px;
-    margin-right:10px;
-    border-radius:8px;
+.progress{
+    width:100%;
 }
 
-.active {
-    border:2px solid #2ea043;
+.list{
+    max-width:400px;
+    margin:auto;
+    text-align:left;
+}
+
+.item{
+    padding:10px;
+    border-bottom:1px solid #333;
+    cursor:pointer;
+}
+
+.active{
+    color:#1db954;
 }
 </style>
 </head>
 
 <body>
 
-<h1>🔥 YOUTUBE PLAYER PRO</h1>
-
-<!-- 로그인 -->
-<input id="userID" placeholder="아이디 입력">
-<button onclick="login()">로그인</button>
-
-<!-- 테마 -->
-<button onclick="toggleTheme()">🌙/☀ 테마 변경</button>
-
-<br><br>
-
-<input id="videoTitle" placeholder="곡 제목">
-<input id="videoID" placeholder="YouTube ID">
-<button onclick="addToList()">저장</button>
+<h1>🎧 Spotify Style Player</h1>
 
 <div class="player">
-<iframe id="ytPlayer"></iframe>
+
+<img id="cover">
+
+<h3 id="title">곡 없음</h3>
+
+<audio id="audio"></audio>
+
+<div>
+    <span id="current">0:00</span>
+    <input type="range" id="progress" class="progress" value="0">
+    <span id="duration">0:00</span>
 </div>
 
-<h2>📀 재생목록</h2>
-<div id="listBox"></div>
+<div class="controls">
+    <button onclick="prev()">⏮</button>
+    <button onclick="toggle()">▶/⏸</button>
+    <button onclick="next()">⏭</button>
+</div>
+
+<div>
+    <button onclick="shuffle()">🔀 셔플</button>
+    <button onclick="repeat()">🔁 반복</button>
+</div>
+
+</div>
+
+<h2>📀 플레이리스트</h2>
+
+<input id="t" placeholder="제목">
+<input id="mp3" placeholder="MP3 URL">
+<input id="img" placeholder="이미지 URL">
+<button onclick="add()">추가</button>
+
+<div class="list" id="list"></div>
 
 <script>
-let savedList=[];
-let currentIndex=-1;
-let currentUser="guest";
+let list=[];
+let index=0;
+let isShuffle=false;
+let isRepeat=false;
 
-// ===== 로그인 =====
-function login(){
-    const id=document.getElementById("userID").value.trim();
-    if(!id) return alert("아이디 입력!");
+const audio=document.getElementById("audio");
 
-    currentUser=id;
-    loadUserData();
+// 추가
+function add(){
+    const t=document.getElementById("t").value;
+    const mp3=document.getElementById("mp3").value;
+    const img=document.getElementById("img").value;
 
-    alert(id+" 로그인 완료!");
+    list.push({t,mp3,img});
+    render();
 }
 
-// ===== 사용자 데이터 로드 =====
-function loadUserData(){
-    const data=localStorage.getItem("yt_"+currentUser);
-    const idx=localStorage.getItem("yt_idx_"+currentUser);
+// 재생
+function play(i){
+    index=i;
 
-    savedList = data ? JSON.parse(data) : [];
-    currentIndex = idx ? parseInt(idx) : -1;
+    audio.src=list[i].mp3;
+    audio.play();
 
-    renderList();
+    document.getElementById("title").innerText=list[i].t;
+    document.getElementById("cover").src=list[i].img;
 
-    if(currentIndex>=0 && savedList[currentIndex]){
-        playVideoIndex(currentIndex);
+    render();
+}
+
+// 토글
+function toggle(){
+    if(audio.paused) audio.play();
+    else audio.pause();
+}
+
+// 다음곡
+function next(){
+    if(isShuffle){
+        index=Math.floor(Math.random()*list.length);
+    }else{
+        index++;
     }
+
+    if(index>=list.length){
+        if(isRepeat) index=0;
+        else return;
+    }
+
+    play(index);
 }
 
-// ===== 저장 =====
-function save(){
-    localStorage.setItem("yt_"+currentUser,JSON.stringify(savedList));
-    localStorage.setItem("yt_idx_"+currentUser,currentIndex);
+// 이전곡
+function prev(){
+    index--;
+    if(index<0) index=0;
+    play(index);
 }
 
-// ===== 테마 =====
-function toggleTheme(){
-    document.body.classList.toggle("light");
+// 자동재생
+audio.onended=()=>{
+    next();
+};
 
-    const theme = document.body.classList.contains("light") ? "light" : "dark";
-    localStorage.setItem("theme",theme);
+// 진행바
+audio.ontimeupdate=()=>{
+    const progress=document.getElementById("progress");
+    progress.value=(audio.currentTime/audio.duration)*100;
+
+    document.getElementById("current").innerText=format(audio.currentTime);
+    document.getElementById("duration").innerText=format(audio.duration);
+};
+
+// 드래그 이동
+document.getElementById("progress").oninput=(e)=>{
+    audio.currentTime=(e.target.value/100)*audio.duration;
+};
+
+// 시간 포맷
+function format(s){
+    if(!s) return "0:00";
+    const m=Math.floor(s/60);
+    const sec=Math.floor(s%60);
+    return m+":"+(sec<10?"0":"")+sec;
 }
 
-// 테마 유지
-window.onload=function(){
-    const theme=localStorage.getItem("theme");
-    if(theme==="light") document.body.classList.add("light");
-
-    login(); // 자동 guest 로그인
+// 셔플
+function shuffle(){
+    isShuffle=!isShuffle;
+    alert("셔플: "+isShuffle);
 }
 
-// ===== 썸네일 =====
-function thumb(id){
-    return `https://img.youtube.com/vi/${id}/mqdefault.jpg`;
+// 반복
+function repeat(){
+    isRepeat=!isRepeat;
+    alert("반복: "+isRepeat);
 }
 
-// ===== 재생 =====
-function playVideoIndex(i){
-    currentIndex=i;
-
-    document.getElementById("ytPlayer").src=
-    `https://www.youtube.com/embed/${savedList[i].id}?autoplay=1&mute=1`;
-
-    save();
-    renderList();
-}
-
-// ===== 추가 =====
-function addToList(){
-    const title=document.getElementById("videoTitle").value.trim();
-    const id=document.getElementById("videoID").value.trim();
-
-    if(!title||!id) return alert("입력!");
-
-    savedList.push({title,id});
-    save();
-    renderList();
-}
-
-// ===== 삭제 =====
-function deleteItem(i){
-    savedList.splice(i,1);
-    save();
-    renderList();
-}
-
-// ===== 목록 =====
-function renderList(){
-    const box=document.getElementById("listBox");
+// 리스트
+function render(){
+    const box=document.getElementById("list");
     box.innerHTML="";
 
-    savedList.forEach((v,i)=>{
-        let div=document.createElement("div");
-        div.className="item";
+    list.forEach((v,i)=>{
+        const d=document.createElement("div");
+        d.className="item";
+        if(i===index) d.classList.add("active");
 
-        if(i===currentIndex) div.classList.add("active");
+        d.innerText=v.t;
+        d.onclick=()=>play(i);
 
-        div.innerHTML=`
-        <img src="${thumb(v.id)}">
-        <div onclick="playVideoIndex(${i})">${v.title}</div>
-        <button onclick="deleteItem(${i})">삭제</button>
-        `;
-
-        box.appendChild(div);
+        box.appendChild(d);
     });
 }
 </script>
