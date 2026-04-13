@@ -2,214 +2,143 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>SPOTIFY STYLE PLAYER</title>
+<title>YOUTUBE PLAYER FINAL</title>
 
 <style>
 body{
-    background:#121212;
+    background:#0d1117;
     color:white;
     font-family:Arial;
     text-align:center;
 }
 
-/* 플레이어 */
 .player{
-    max-width:400px;
-    margin:40px auto;
-    background:#181818;
-    padding:20px;
-    border-radius:20px;
-}
-
-img{
-    width:100%;
+    width:90%;
+    max-width:800px;
+    margin:30px auto;
+    position:relative;
     border-radius:12px;
+    overflow:hidden;
+    background:black;
 }
 
-.controls button{
-    margin:5px;
-    padding:10px;
+/* 유튜브처럼 */
+.player img{
+    width:100%;
+    display:block;
+}
+
+.playBtn{
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    font-size:60px;
+    background:rgba(0,0,0,0.6);
     border-radius:50%;
-    border:none;
-    background:#1db954;
-    color:white;
-    font-size:16px;
+    padding:20px;
     cursor:pointer;
 }
 
-.progress{
-    width:100%;
-}
-
-.list{
-    max-width:400px;
+/* 리스트 */
+#list{
+    max-width:700px;
     margin:auto;
-    text-align:left;
 }
 
 .item{
+    display:flex;
+    background:#161b22;
+    margin:10px;
     padding:10px;
-    border-bottom:1px solid #333;
+    border-radius:10px;
     cursor:pointer;
 }
 
+.item img{
+    width:120px;
+    margin-right:10px;
+}
+
 .active{
-    color:#1db954;
+    border:2px solid #2ea043;
 }
 </style>
 </head>
 
 <body>
 
-<h1>🎧 Spotify Style Player</h1>
+<h1>🎬 YOUTUBE PLAYER (학교용 최종)</h1>
 
-<div class="player">
-
-<img id="cover">
-
-<h3 id="title">곡 없음</h3>
-
-<audio id="audio"></audio>
-
-<div>
-    <span id="current">0:00</span>
-    <input type="range" id="progress" class="progress" value="0">
-    <span id="duration">0:00</span>
-</div>
-
-<div class="controls">
-    <button onclick="prev()">⏮</button>
-    <button onclick="toggle()">▶/⏸</button>
-    <button onclick="next()">⏭</button>
-</div>
-
-<div>
-    <button onclick="shuffle()">🔀 셔플</button>
-    <button onclick="repeat()">🔁 반복</button>
-</div>
-
-</div>
-
-<h2>📀 플레이리스트</h2>
-
-<input id="t" placeholder="제목">
-<input id="mp3" placeholder="MP3 URL">
-<input id="img" placeholder="이미지 URL">
+<input id="title" placeholder="곡 제목">
+<input id="vid" placeholder="YouTube ID">
 <button onclick="add()">추가</button>
 
-<div class="list" id="list"></div>
+<div class="player" onclick="play()">
+    <img id="thumb">
+    <div class="playBtn">▶</div>
+</div>
+
+<h2>📀 목록</h2>
+<div id="list"></div>
 
 <script>
 let list=[];
 let index=0;
-let isShuffle=false;
-let isRepeat=false;
 
-const audio=document.getElementById("audio");
+// 썸네일
+function thumb(id){
+    return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
+}
 
 // 추가
 function add(){
-    const t=document.getElementById("t").value;
-    const mp3=document.getElementById("mp3").value;
-    const img=document.getElementById("img").value;
+    const t=document.getElementById("title").value;
+    const id=document.getElementById("vid").value;
 
-    list.push({t,mp3,img});
+    list.push({t,id});
     render();
 }
 
-// 재생
-function play(i){
+// 선택
+function select(i){
     index=i;
 
-    audio.src=list[i].mp3;
-    audio.play();
-
-    document.getElementById("title").innerText=list[i].t;
-    document.getElementById("cover").src=list[i].img;
+    document.getElementById("thumb").src=thumb(list[i].id);
 
     render();
 }
 
-// 토글
-function toggle(){
-    if(audio.paused) audio.play();
-    else audio.pause();
+// 재생 (우회)
+function play(){
+    const id=list[index]?.id;
+    if(!id) return;
+
+    // 🔥 유튜브 우회 플레이
+    window.open(`https://yewtu.be/watch?v=${id}`);
 }
 
-// 다음곡
+// 자동 다음곡 느낌 (클릭 기반)
 function next(){
-    if(isShuffle){
-        index=Math.floor(Math.random()*list.length);
-    }else{
-        index++;
-    }
-
-    if(index>=list.length){
-        if(isRepeat) index=0;
-        else return;
-    }
-
-    play(index);
+    index++;
+    if(index>=list.length) index=0;
+    select(index);
 }
 
-// 이전곡
-function prev(){
-    index--;
-    if(index<0) index=0;
-    play(index);
-}
-
-// 자동재생
-audio.onended=()=>{
-    next();
-};
-
-// 진행바
-audio.ontimeupdate=()=>{
-    const progress=document.getElementById("progress");
-    progress.value=(audio.currentTime/audio.duration)*100;
-
-    document.getElementById("current").innerText=format(audio.currentTime);
-    document.getElementById("duration").innerText=format(audio.duration);
-};
-
-// 드래그 이동
-document.getElementById("progress").oninput=(e)=>{
-    audio.currentTime=(e.target.value/100)*audio.duration;
-};
-
-// 시간 포맷
-function format(s){
-    if(!s) return "0:00";
-    const m=Math.floor(s/60);
-    const sec=Math.floor(s%60);
-    return m+":"+(sec<10?"0":"")+sec;
-}
-
-// 셔플
-function shuffle(){
-    isShuffle=!isShuffle;
-    alert("셔플: "+isShuffle);
-}
-
-// 반복
-function repeat(){
-    isRepeat=!isRepeat;
-    alert("반복: "+isRepeat);
-}
-
-// 리스트
+// 목록
 function render(){
     const box=document.getElementById("list");
     box.innerHTML="";
 
     list.forEach((v,i)=>{
-        const d=document.createElement("div");
+        let d=document.createElement("div");
         d.className="item";
         if(i===index) d.classList.add("active");
 
-        d.innerText=v.t;
-        d.onclick=()=>play(i);
+        d.innerHTML=`
+        <img src="${thumb(v.id)}">
+        <div onclick="select(${i})">${v.t}</div>
+        `;
 
         box.appendChild(d);
     });
